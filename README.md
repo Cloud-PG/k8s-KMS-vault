@@ -19,6 +19,8 @@ kubectl exec vault-0 -- vault operator unseal $VAULT_UNSEAL_KEY
 ```
 
 ## Vault plugin
+The Kubernetes KMS Plugin Provider for HashiCorp Vault implementation is a simple adapter that adapts calls from Kubernetes to HashiCorp Vault APIs using configuration that determines how the plugin finds the HashiCorp Vault installation.
+
 ```kubectl deploy plugin.yaml```
 
 Edit the API server pod specification file ```/etc/kubernetes/manifests/kube-apiserver.yaml``` on the master node and set the ```--encryption-provider-config``` parameter to the path of that file: ```--encryption-provider-config=</path/to/EncryptionConfig/File>```
