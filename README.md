@@ -19,8 +19,30 @@ kubectl exec vault-0 -- vault operator unseal $VAULT_UNSEAL_KEY
 ```
 
 ## Vault plugin
+```kubectl deploy plugin.yaml```
+
+Edit the API server pod specification file ```/etc/kubernetes/manifests/kube-apiserver.yaml``` on the master node and set the ```--encryption-provider-config``` parameter to the path of that file: ```--encryption-provider-config=</path/to/EncryptionConfig/File>```
+
+Then restart API server.
+
+## Check encryption is OK
+Data is encrypted when written to etcd. After restarting your kube-apiserver, any newly created or updated secret should be encrypted when stored. To verify, you can use the etcdctl command line program to retrieve the contents of your secret.
+
+Create a new secret called secret1 in the default namespace:
 ```
+kubectl create secret generic secret1 -n default --from-literal=mykey=mydata
+```
+Using the etcdctl command line, read that secret out of etcd:
+```
+ETCDCTL_API=3 etcdctl get /kubernetes.io/secrets/default/secret1 [...] | hexdump -C
+```
+where [...] must be the additional arguments for connecting to the etcd server.
 
+Verify the stored secret is prefixed with k8s:enc:kms:v1:, which indicates that the kms provider has encrypted the resulting data.
 
-## httpgo Server
+Verify that the secret is correctly decrypted when retrieved via the API:
+```
+kubectl describe secret secret1 -n default
+```
+should match mykey: ```mydata```
 
