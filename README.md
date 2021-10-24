@@ -11,8 +11,8 @@ Three different components:
 ```
 helm repo add hashicorp https://helm.releases.hashicorp.com
 helm repo update
-helm install consul hashicorp/consul --values helm-consul-values.yml
-helm install vault hashicorp/vault --values helm-vault-values.yml
+helm install consul hashicorp/consul --values helm-consul-values.yaml
+helm install vault hashicorp/vault --values helm-vault-values.yaml
 kubectl exec vault-0 -- vault operator init -key-shares=1 -key-threshold=1 -format=json > cluster-keys.json
 VAULT_UNSEAL_KEY=$(cat cluster-keys.json | jq -r ".unseal_keys_b64[]")
 kubectl exec vault-0 -- vault operator unseal $VAULT_UNSEAL_KEY
