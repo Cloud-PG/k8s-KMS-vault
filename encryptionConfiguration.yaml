@@ -6,7 +6,7 @@ resources:
     providers:
       - kms:
           name: myKmsPlugin
-          endpoint: unix:///tmp/socketfile.sock
+          endpoint: unix:///opt/cloudadm/kubernetes-vault-kms-plugin/vault/server/test
           cachesize: 100
           timeout: 3s
       - identity: {}
