@@ -35,7 +35,11 @@ spec:
     spec:
       containers:
       - name: httpgo
-        image: veknet/httpgo:latest
+        #image: veknet/httpgo:latest
+        image: registry.cern.ch/cmsweb/httpgo@sha256:50b8811b2b9bb834457a0764c8277b6d7242a3eba0d1b76fcbbeb7f12392ab56
+        command: ["/data/httpgo"]
+        args: ["-config", "/etc/config/httpgoConfig.json"]
+        #-config /etc/config/httpgoConfig.json  
         volumeMounts:
           - mountPath: "/etc/certs/"
             name: my-tls-secret
