@@ -40,6 +40,8 @@ spec:
           - mountPath: "/etc/certs/"
             name: my-tls-secret
             readOnly: true
+          - mountPath: "/etc/config"
+            name: config-volume
         ports:
         - containerPort: 8888
         imagePullPolicy: Always
@@ -47,3 +49,7 @@ spec:
         - name: my-tls-secret
           secret:
             secretName: my-tls-secret
+          volumes:
+        - name: config-volume
+          configMap:
+            name: httpgo-config
