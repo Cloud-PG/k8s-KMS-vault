@@ -36,6 +36,14 @@ spec:
       containers:
       - name: httpgo
         image: veknet/httpgo:latest
+        volumeMounts:
+          - mountPath: "/etc/certs/"
+            name: my-tls-secret
+            readOnly: true
         ports:
         - containerPort: 8888
         imagePullPolicy: Always
+      volumes:
+        - name: my-tls-secret
+          secret:
+            secretName: my-tls-secret
