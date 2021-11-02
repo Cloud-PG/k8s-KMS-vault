@@ -1,13 +1,24 @@
 # k8s-KMS-vault
 This repository contains code to deploy secret encryption at REST via a KMS system using a HashiCorp Vault deployment.
-This implementation is based on https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/.
-KMS is based on envelop encryption, that is described in the diagram below (that is taken from [spectrocloud](https://www.spectrocloud.com/blog/how-to-keep-your-kubernetes-secrets-secret/))
+This implementation is based on https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/. KMS is based on envelop encryption mechanism.
 
-
-Three different components:
+In particular, you will be able to enable the encryption of secrets via KMS of TLS certificates which will be used by a simple httpgo server.
+So, the key components of this deployments are:
 - HashiCorp Vault deployment (https://www.vaultproject.io/)
 - Vault plugin (https://github.com/ttedeschi/kubernetes-vault-kms-plugin)
 - httpgo: a basic HTTP server written in Go language (https://hub.docker.com/r/veknet/httpgo)
+
+## Quick start
+
+
+## Components details
+### HashiCorp Vault
+Vault is an identity-based secrets and encryption management system.
+
+### Vault plugin
+The Kubernetes KMS Plugin Provider for HashiCorp Vault implementation is a simple adapter that adapts calls from Kubernetes to HashiCorp Vault APIs using configuration that determines how the plugin finds the HashiCorp Vault installation. The plugin is implemented based on the Kubernetes contract as described in Implementing a KMS plugin.
+
+
 
 ## Developer mode
 Log into K8s master vm.
