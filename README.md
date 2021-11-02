@@ -6,18 +6,23 @@ In particular, you will be able to enable the encryption of secrets via KMS of T
 So, the key components of this deployments are:
 - HashiCorp Vault deployment (https://www.vaultproject.io/)
 - Vault plugin (https://github.com/ttedeschi/kubernetes-vault-kms-plugin)
-- httpgo: a basic HTTP server written in Go language (https://hub.docker.com/r/veknet/httpgo)
+- httpgo: a basic HTTP server written in Go language (https://github.com/vkuznet/httpgo)
 
 ## Quick start
 
 
 ## Components details
+The full workflow is described in the diagram below, taken from [oracle](https://github.com/oracle/kubernetes-vault-kms-plugin)
+![](vaultplugin.png)
+
 ### HashiCorp Vault
 Vault is an identity-based secrets and encryption management system.
 
-### Vault plugin
+### Vault KMS plugin
 The Kubernetes KMS Plugin Provider for HashiCorp Vault implementation is a simple adapter that adapts calls from Kubernetes to HashiCorp Vault APIs using configuration that determines how the plugin finds the HashiCorp Vault installation. The plugin is implemented based on the Kubernetes contract as described in Implementing a KMS plugin.
 
+### Httpgo
+HTTPGO is a basic HTTP server written in Go language
 
 
 ## Developer mode
