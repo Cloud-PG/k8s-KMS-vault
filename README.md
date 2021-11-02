@@ -72,7 +72,7 @@ Create ```vault-plugin.yaml``` configuration file as shown in this file [vault-p
 keyNames:
   - kube-secret-enc-key
 transitPath: /transit
-addr: https://example.com:8200
+addr: http://127.0.0.1:8200
 token: <token>
 ```
 
@@ -118,6 +118,7 @@ The api-server should be restarted automatically by kubelet. In case of problems
 ### Test generic secret encryption
 Data is encrypted when written to etcd. After restarting your kube-apiserver, any newly created or updated secret should be encrypted when stored. To verify, you can use the etcdctl command line program to retrieve the contents of your secret:
 ```
+export VAULT_ADDR='http://127.0.0.1:8200'
 vault secrets enable transit
 kubectl create secret generic secret1 -n default --from-literal=mykey=mydata
 ETCDCTL_API=3 etcdctl [...] get /registry/secrets/default/secret1
