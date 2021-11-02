@@ -8,9 +8,6 @@ So, the key components of this deployments are:
 - Vault plugin (https://github.com/ttedeschi/kubernetes-vault-kms-plugin)
 - httpgo: a basic HTTP server written in Go language (https://github.com/vkuznet/httpgo)
 
-## Quick start
-
-
 ## Components details
 The full workflow is described in the diagram below, taken from [oracle](https://github.com/oracle/kubernetes-vault-kms-plugin)
 ![](vaultplugin.png)
@@ -24,17 +21,18 @@ The Kubernetes KMS Plugin Provider for HashiCorp Vault implementation is a simpl
 ### Httpgo
 HTTPGO is a basic HTTP server written in Go language
 
-
-## Developer mode
+## Quick start
 Log into K8s master vm.
-- Install and deploy Vault server in development mode
+
+### Deploy vault server (developer mode - not to be used in production)
+Install and deploy Vault server in development mode
   ```
   curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
   sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
   sudo apt-get update && sudo apt-get install vault
   vault server -dev 
   ```
-- Deploy vaultPlugin
+### Deploy Vault KMS Plugin
   ```
   git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
   cd kubernetes-vault-kms-plugin/vault
@@ -44,7 +42,8 @@ Log into K8s master vm.
   go run grpcServer.go --vaultConfig config.json --socketFile test
   ```
   putting the right token inside ```config.json```
-- Enable KMS encryption in Kubernetes:
+
+### Enable KMS encryption in Kubernetes
   - ```git clone https://github.com/ttedeschi/k8s-KMS-vault.git```
   - modify ```/etc/kubernetes/manifests/kube-apiserver.yaml``` inserting:
     ```
@@ -60,20 +59,32 @@ Log into K8s master vm.
     name: cloudadm
     ```
     the api-server should be restarted automatically by kubelet
-- Data is encrypted when written to etcd. After restarting your kube-apiserver, any newly created or updated secret should be encrypted when stored. To verify, you can use the etcdctl command line program to retrieve the contents of your secret:
+
+### Test generic secret encryption
+Data is encrypted when written to etcd. After restarting your kube-apiserver, any newly created or updated secret should be encrypted when stored. To verify, you can use the etcdctl command line program to retrieve the contents of your secret:
   - ```vault secrets enable transit```
   - ```kubectl create secret generic secret1 -n default --from-literal=mykey=mydata```
   - ```ETCDCTL_API=3 etcdctl --endpoints=[192.168.0.8]:2379 --cert=/etc/kubernetes/pki/etcd/peer.crt  --key=/etc/kubernetes/pki/etcd/peer.key --cacert=/etc/kubernetes/pki/etcd/ca.crt get /registry/secrets/default/secret1```
   - Verify the stored secret is prefixed with ```k8s:enc:kms:v1:``` which indicates the ```kms``` provider has encrypted the resulting data.
   - ``` kubectl get secret secret1 -o jsonpath='{.data}'``` should match ```mykey: bXlkYXRh```
 
-### To debug
-```cat /var/log/pods/kube-system_kube-apiserver-vnode-0.localdomain_ad7922ae75a63252aca31fd74e89087b/kube-apiserver/7.log```
+Now encryption via KMS is enabled.
 
-### To test with certificate
+### Test certificate encryption and use them in httpgo server
+To test with certificates, create a personal certificate:
 ``` 
 openssl genrsa -out ca.key 2048
 openssl req -x509   -new -nodes    -days 365   -key ca.key   -out ca.crt   -subj "/CN=yourdomain.com"
 kubectl create secret tls my-tls-secret --key ca.key --cert ca.crt
 ```
+And deploy the httpgo server, which takes as input a configmap and certificates from secrets:
+```
+kubectl apply -f httpgoConfigMap.yaml
+kubectl apply -f httpgo.yaml
+```
+
+### To debug
+```cat /var/log/pods/kube-system_kube-apiserver-vnode-0.localdomain_ad7922ae75a63252aca31fd74e89087b/kube-apiserver/7.log```
+
+
 
