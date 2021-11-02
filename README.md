@@ -10,7 +10,7 @@ So, the key components of this deployments are:
 
 ## Components details
 The full workflow is described in the diagram below, taken from [oracle](https://github.com/oracle/kubernetes-vault-kms-plugin)
-![](vaultplugin.png)
+![](images/vaultplugin.png)
 
 ### HashiCorp Vault
 Vault is an identity-based secrets and encryption management system.
