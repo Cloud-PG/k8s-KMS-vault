@@ -1,6 +1,0 @@
-keyNames:
-  - kube-secret-enc-key
-transitPath: /transit
-ca-cert: /home/me/ca.cert
-addr: https://example.com:8200
-token: <token>
