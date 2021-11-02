@@ -213,8 +213,4 @@ spec:
 And deploy it with ```kubectl apply -f httpgo.yaml```
 
 
-### To debug
-```cat /var/log/pods/kube-system_kube-apiserver-vnode-0.localdomain_ad7922ae75a63252aca31fd74e89087b/kube-apiserver/7.log```
-
-
 
