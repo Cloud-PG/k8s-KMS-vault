@@ -104,14 +104,14 @@ Change api-server configuration by modifying ```/etc/kubernetes/manifests/kube-a
 ```
 ```
 - mountPath: <path to encryption configuration yaml file folder>
-  name: encryptionConfig
+  name: encryption-config
   readOnly: true
 ```
 ```
 - hostPath:
     path: <path to encryption configuration yaml file folder>
     type: DirectoryOrCreate
-  name: encryptionConfig
+  name: encryption-config
 ```
 The api-server should be restarted automatically by kubelet. In case of problems, debugging can be done looking at log files stored in ```/var/log/pods/kube-system_kube-apiserver*```.
 
