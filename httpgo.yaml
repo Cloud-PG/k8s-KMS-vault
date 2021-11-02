@@ -1,7 +1,3 @@
-
-# This manifest is used to deploy an httpgo deployment and to deploy its service.
-# The image ttedesch/httpgo_exporter:latest contains an httpgo server and a process exporter that looks for httpgo process
-
 # create service
 apiVersion: v1
 kind: Service
@@ -18,7 +14,7 @@ spec:
     name: http
     nodePort: 31000
 ---
-# create httpgo (with exporter) deployment
+# create httpgo deployment
 apiVersion: apps/v1 
 kind: Deployment
 metadata:
