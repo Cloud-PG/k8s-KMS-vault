@@ -26,22 +26,64 @@ Log into K8s master vm.
 
 ### Deploy vault server (developer mode - not to be used in production)
 Install and deploy Vault server in development mode
-  ```
-  curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-  sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-  sudo apt-get update && sudo apt-get install vault
-  vault server -dev 
-  ```
+```
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install vault
+vault server -dev 
+```
+The output should be:
+```
+WARNING! dev mode is enabled! In this mode, Vault runs entirely in-memory
+and starts unsealed with a single unseal key. The root token is already
+authenticated to the CLI, so you can immediately begin using Vault.
+
+You may need to set the following environment variable:
+
+    $ export VAULT_ADDR='http://127.0.0.1:8200'
+
+The unseal key and root token are displayed below in case you want to
+seal/unseal the Vault or re-authenticate.
+
+Unseal Key: 8XTzc+DuTplcRYzKXrgtlXhI7mdvYtSTOzKYXKsE5Os=
+Root Token: s.RwBgfvNKfwfZsYZVGN88C6Eh
+
+Development mode should NOT be used in production installations!
+```
+
+  
 ### Deploy Vault KMS Plugin
-  ```
-  git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
-  cd kubernetes-vault-kms-plugin/vault
-  git mod init
-  git test
-  cd server
-  go run grpcServer.go --vaultConfig config.json --socketFile test
-  ```
-  putting the right token inside ```config.json```
+Note: The KMS Plugin Provider for HashiCorp Vault must be running before starting the Kubernetes API server.
+
+```
+export GOHOME=$(go env GOPATH)
+mkdir -p $GOHOME/github.com/oracle
+cd $GOHOME/github.com/oracle
+git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
+go install github.com/oracle/kubernetes-vault-kms-plugin/vault/server@latest
+```
+Create a config.json configuration file as shown in this file [config.json] putting the right token inside ```config.json```:
+```
+{
+"addr": "http://127.0.0.1:8200",
+"token": "",
+"keyNames": ["K8S-keys"],
+}
+```
+Then run:
+```
+$GOHOME/bin/server -socketFile=<location of socketfile.sock> -vaultConfig=<location of vault-plugin.yaml>
+```
+
+```
+git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
+cd kubernetes-vault-kms-plugin/vault
+git mod init
+git test
+cd server
+go run grpcServer.go --vaultConfig config.json --socketFile test
+```
+  
 
 ### Enable KMS encryption in Kubernetes
   - ```git clone https://github.com/ttedeschi/k8s-KMS-vault.git```
