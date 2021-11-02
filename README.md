@@ -1,6 +1,8 @@
 # k8s-KMS-vault
 This repository contains code to deploy secret encryption at REST via a KMS system using a HashiCorp Vault deployment.
 This implementation is based on https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/.
+KMS is based on envelop encryption, that is described in the diagram below (that is taken from [spectrocloud](https://www.spectrocloud.com/blog/how-to-keep-your-kubernetes-secrets-secret/))
+
 
 Three different components:
 - HashiCorp Vault deployment (https://www.vaultproject.io/)
