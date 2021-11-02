@@ -170,7 +170,7 @@ spec:
     name: http
     nodePort: 31000
 ---
-# create httpgo (with exporter) deployment
+# create httpgo deployment
 apiVersion: apps/v1 
 kind: Deployment
 metadata:
