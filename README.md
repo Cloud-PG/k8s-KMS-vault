@@ -121,7 +121,7 @@ Data is encrypted when written to etcd. After restarting your kube-apiserver, an
 export VAULT_ADDR='http://127.0.0.1:8200'
 vault secrets enable transit
 kubectl create secret generic secret1 -n default --from-literal=mykey=mydata
-ETCDCTL_API=3 etcdctl [...] get /registry/secrets/default/secret1
+ETCDCTL_API=3 etcdctl --endpoints=[<endpoint_ip>]:<endpoint_port> --cert=/etc/kubernetes/pki/etcd/peer.crt  --key=/etc/kubernetes/pki/etcd/peer.key --cacert=/etc/kubernetes/pki/etcd/ca.crt get /registry/secrets/default/secret1
 ```
 where ```[...]``` indicates all useful arguments to connect to ```etcd```.
 Verify the stored secret is prefixed with ```k8s:enc:kms:v1:``` which indicates the ```kms``` provider has encrypted the resulting data.
