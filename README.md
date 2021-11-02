@@ -67,7 +67,7 @@ git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
 go install github.com/oracle/kubernetes-vault-kms-plugin/vault/server@latest
 ```
 
-Create ```vault-plugin.yaml``` configuration file as shown in this file [vault-plugin.yaml] putting the right token:
+Create ```vault-plugin.yaml``` configuration file as shown in this file [vault-plugin.yaml](vault-plugin.yaml) putting the right token and the right address that you can retrieve from the output above:
 ```
 keyNames:
   - kube-secret-enc-key
