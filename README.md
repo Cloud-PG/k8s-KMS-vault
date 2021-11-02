@@ -21,6 +21,10 @@ The Kubernetes KMS Plugin Provider for HashiCorp Vault implementation is a simpl
 ### Httpgo
 HTTPGO is a basic HTTP server written in Go language
 
+## Requirements
+- Kubernetes 1.10 or later
+- Go 1.9 or later
+
 ## Quick start
 Log into K8s master vm.
 
@@ -46,7 +50,7 @@ The unseal key and root token are displayed below in case you want to
 seal/unseal the Vault or re-authenticate.
 
 Unseal Key: 8XTzc+DuTplcRYzKXrgtlXhI7mdvYtSTOzKYXKsE5Os=
-Root Token: s.RwBgfvNKfwfZsYZVGN88C6Eh
+Root Token: <token>
 
 Development mode should NOT be used in production installations!
 ```
@@ -62,68 +66,152 @@ cd $GOHOME/github.com/oracle
 git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
 go install github.com/oracle/kubernetes-vault-kms-plugin/vault/server@latest
 ```
-Create a config.json configuration file as shown in this file [config.json] putting the right token inside ```config.json```:
+
+Create ```vault-plugin.yaml``` configuration file as shown in this file [vault-plugin.yaml] putting the right token:
 ```
-{
-"addr": "http://127.0.0.1:8200",
-"token": "",
-"keyNames": ["K8S-keys"],
-}
+keyNames:
+  - kube-secret-enc-key
+transitPath: /transit
+addr: https://example.com:8200
+token: <token>
 ```
+
 Then run:
 ```
 $GOHOME/bin/server -socketFile=<location of socketfile.sock> -vaultConfig=<location of vault-plugin.yaml>
 ```
 
-```
-git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
-cd kubernetes-vault-kms-plugin/vault
-git mod init
-git test
-cd server
-go run grpcServer.go --vaultConfig config.json --socketFile test
-```
-  
-
 ### Enable KMS encryption in Kubernetes
-  - ```git clone https://github.com/ttedeschi/k8s-KMS-vault.git```
-  - modify ```/etc/kubernetes/manifests/kube-apiserver.yaml``` inserting:
-    ```
-    --encryption-provider-config=/opt/cloudadm/k8s-KMS-vault/encryptionConfiguration.yaml
-    ...
-    - mountPath: /opt/cloudadm
-      name: cloudadm
-      readOnly: true
-    ...
-    - hostPath:
-      path: /opt/cloudadm
-      type: DirectoryOrCreate
-    name: cloudadm
-    ```
-    the api-server should be restarted automatically by kubelet
+The configuration of the api-server should be contained in a yaml file like this:
+
+```
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      - kms:
+          name: myKmsPlugin
+          endpoint: unix://<location of socketfile.sock>
+          cachesize: 100
+          timeout: 3s
+      - identity: {}
+```
+Change api-server configuration by modifying ```/etc/kubernetes/manifests/kube-apiserver.yaml```, inserting:
+```
+--encryption-provider-config=<path to encryption configuration yaml file>
+```
+```
+- mountPath: <path to encryption configuration yaml file folder>
+  name: encryptionConfig
+  readOnly: true
+```
+```
+- hostPath:
+  path: <path to encryption configuration yaml file folder>
+  type: DirectoryOrCreate
+  name: encryptionConfig
+```
+The api-server should be restarted automatically by kubelet. In case of problems, debugging can be done looking at log files stored in ```/var/log/pods/kube-system_kube-apiserver*```.
 
 ### Test generic secret encryption
 Data is encrypted when written to etcd. After restarting your kube-apiserver, any newly created or updated secret should be encrypted when stored. To verify, you can use the etcdctl command line program to retrieve the contents of your secret:
-  - ```vault secrets enable transit```
-  - ```kubectl create secret generic secret1 -n default --from-literal=mykey=mydata```
-  - ```ETCDCTL_API=3 etcdctl --endpoints=[192.168.0.8]:2379 --cert=/etc/kubernetes/pki/etcd/peer.crt  --key=/etc/kubernetes/pki/etcd/peer.key --cacert=/etc/kubernetes/pki/etcd/ca.crt get /registry/secrets/default/secret1```
-  - Verify the stored secret is prefixed with ```k8s:enc:kms:v1:``` which indicates the ```kms``` provider has encrypted the resulting data.
-  - ``` kubectl get secret secret1 -o jsonpath='{.data}'``` should match ```mykey: bXlkYXRh```
+```
+vault secrets enable transit
+kubectl create secret generic secret1 -n default --from-literal=mykey=mydata
+ETCDCTL_API=3 etcdctl [...] get /registry/secrets/default/secret1
+```
+where ```[...]``` indicates all useful arguments to connect to ```etcd```.
+Verify the stored secret is prefixed with ```k8s:enc:kms:v1:``` which indicates the ```kms``` provider has encrypted the resulting data.
+Finally, the output of the ``` kubectl get secret secret1 -o jsonpath='{.data}'``` command  should match ```mykey: bXlkYXRh```.
 
 Now encryption via KMS is enabled.
 
 ### Test certificate encryption and use them in httpgo server
-To test with certificates, create a personal certificate:
+To test with certificates, create a personal certificate and put it into a secret:
 ``` 
 openssl genrsa -out ca.key 2048
-openssl req -x509   -new -nodes    -days 365   -key ca.key   -out ca.crt   -subj "/CN=yourdomain.com"
+openssl req -x509 -new -nodes -days 365 -key ca.key -out ca.crt -subj "/CN=yourdomain.com"
 kubectl create secret tls my-tls-secret --key ca.key --cert ca.crt
 ```
-And deploy the httpgo server, which takes as input a configmap and certificates from secrets:
+Define a configMap for the httpgo server in a ```httpgoConfigMap.yaml```
 ```
-kubectl apply -f httpgoConfigMap.yaml
-kubectl apply -f httpgo.yaml
+ apiVersion: v1
+ kind: ConfigMap
+ metadata:
+   name: httpgo-config
+   namespace: default
+ data:
+   httpgoConfig.json: |
+    {
+        "port": 8888,
+        "serverkey": "/etc/certs/tls.key",
+        "serverkey": "/etc/certs/tls.crt"
+    }
 ```
+And deploy it with ```kubectl apply -f httpgoConfigMap.yaml```
+
+Then, define the deployment and service of an httpgo server that uses that configuration and that secret:
+```
+# create service
+apiVersion: v1
+kind: Service
+metadata:
+  name: httpgo
+spec:
+  type: NodePort 
+  selector:
+    app: httpgo
+  ports:
+  - port: 8888
+    targetPort: 8888 
+    protocol: TCP
+    name: http
+    nodePort: 31000
+---
+# create httpgo (with exporter) deployment
+apiVersion: apps/v1 
+kind: Deployment
+metadata:
+  name: httpgo
+spec:
+  selector:
+    matchLabels:
+      app: httpgo
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: httpgo
+    spec:
+      containers:
+      - name: httpgo
+        #image: veknet/httpgo:latest
+        image: registry.cern.ch/cmsweb/httpgo@sha256:50b8811b2b9bb834457a0764c8277b6d7242a3eba0d1b76fcbbeb7f12392ab56
+        command: ["/data/httpgo"]
+        args: ["-config", "/etc/config/httpgoConfig.json"]
+        #-config /etc/config/httpgoConfig.json  
+        volumeMounts:
+          - mountPath: "/etc/certs/"
+            name: my-tls-secret
+            readOnly: true
+          - mountPath: "/etc/config"
+            name: config-volume
+        ports:
+        - containerPort: 8888
+        imagePullPolicy: Always
+      volumes:
+        - name: my-tls-secret
+          secret:
+            secretName: my-tls-secret
+          volumes:
+        - name: config-volume
+          configMap:
+            name: httpgo-config
+```
+And deploy it with ```kubectl apply -f httpgo.yaml```
+
 
 ### To debug
 ```cat /var/log/pods/kube-system_kube-apiserver-vnode-0.localdomain_ad7922ae75a63252aca31fd74e89087b/kube-apiserver/7.log```
