@@ -1,5 +1,0 @@
-{
-"port": 8888,
-"serverkey": "/etc/certs/tls.key",
-"serverkey": "/etc/certs/tls.crt"
-}
