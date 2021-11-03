@@ -210,5 +210,7 @@ spec:
 ```
 And deploy it with ```kubectl apply -f httpgo.yaml```
 
-
+## Open issues
+- What is the best and most secure way for the plugin to authenticate with the Vault server (which should not be run in development mode)? In principle no credentials should be stored in the node, otherwise once the node is compromised, an hacker could get access to the vault server anyway. IAM roles?
+ 
 
