@@ -213,4 +213,22 @@ And deploy it with ```kubectl apply -f httpgo.yaml```
 ## Open issues
 - What is the best and most secure way for the plugin to authenticate with the Vault server (which should not be run in development mode)? In principle no credentials should be stored in the node, otherwise once the node is compromised, an hacker could get access to the vault server anyway. IAM roles?
  
+# Sealed Secrets
+Install ```kubeseal``` command line tool:
+```
+wget https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.16.0/kubeseal-linux-amd64 -O kubeseal
+sudo install -m 755 kubeseal /usr/local/bin/kubeseal
+```
+Install Sealed Secrets controller:
+```
+helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
+helm install sealed-secrets-controller sealed-secrets/sealed-secrets -n kube-system
+```
+Then, try it out:
+```
+echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
+kubeseal <mysecret.json >mysealedsecret.json
+kubectl create -f mysealedsecret.json
+kubectl get secret mysecret
+```
 
