@@ -214,6 +214,9 @@ And deploy it with ```kubectl apply -f httpgo.yaml```
 - What is the best and most secure way for the plugin to authenticate with the Vault server (which should not be run in development mode)? In principle no credentials should be stored in the node, otherwise once the node is compromised, an hacker could get access to the vault server anyway. IAM roles?
  
 # Sealed Secrets
+Sealed Secrets are the solution to manage secrets in version control systems: https://github.com/bitnami-labs/sealed-secrets. In fact, it allows you to encrypt your Secret into a SealedSecret, which is safe to store - even to a public repository. The SealedSecret can be decrypted only by the controller running in the target cluster and nobody else (not even the original author) is able to obtain the original Secret from the SealedSecret.
+
+## Quick start 
 Install ```kubeseal``` command line tool:
 ```
 wget https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.16.0/kubeseal-linux-amd64 -O kubeseal
@@ -231,4 +234,43 @@ kubeseal <mysecret.json >mysealedsecret.json
 kubectl create -f mysealedsecret.json
 kubectl get secret mysecret
 ```
-
+```mysecret.json``` is
+```
+{
+    "kind": "Secret",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "mysecret",
+        "creationTimestamp": null
+    },
+    "data": {
+        "foo": "YmFy"
+    }
+}
+```
+Instead, ```mysealedsecret.json``` will look like this:
+```
+{
+  "kind": "SealedSecret",
+  "apiVersion": "bitnami.com/v1alpha1",
+  "metadata": {
+    "name": "mysecret",
+    "namespace": "default",
+    "creationTimestamp": null
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "name": "mysecret",
+        "namespace": "default",
+        "creationTimestamp": null
+      },
+      "data": null
+    },
+    "encryptedData": {
+      "foo": "AgAFBnbdaSJ75NRxzA9D8c4PUoF3bDGfIFBdaBZMurKv7w+4n6QZJuwh++HnNbuaQ33rmhBewVtsrF+DdH19eil/xyCLtN89VlmSVs5QsTERzxuEbh5TVsUIiYDUF3IQDdvwXFKH0eyX5q313qeX4o+oOWnfHUzNqRgx0FWsikD+ca1X75J32D90hwcIegayvg/o07ravG1y1g91Fwx29U6gCzWZJ6QdajQZE8vFdzuWbng2sOj6LGTvzC+W33WIUlQuY829h4c84leyn2T604k9Mx23trN9jmhWhxY5k80VeOaIW/ThT2GHmKDu/WrwAIxHB8sIibJcYAD8w9+O628zPii+2whsH5LsOMKU4m7Yvp0lHTNLS3ItNK048kBGFuHvp5dDl+re845+u8UGJ8WodwZ8TKV3wgW/u08OqijReT5Kkg6EleC/TwnflpW5/cI1e5WkDd4eZUGL8cWulhNg0xMfZI8ysuiMmrkSMJv5mWsWSZjee+skblTifBOz7c5raDTxwgyQvhdOyiaezmVKvH/12Vtjkhix4iSwcApRWLU6JbhYw9qHm+pWjSnclgfyB8sxn9yBZfgWRRFJfC8c0cyXT17E0WXIHr0GY34dpMDwiYJO0ySYEJcv7RYRlWmNePAo9svSbR3lnsfm8n1bXOTXr6AIKMiRANRHiWKsOKJQc0wEahAaNIS/yJRBIPuGajo="
+    }
+  }
+}
+```
+and it will be safe to be pushed to a public repository.
