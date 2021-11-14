@@ -24,6 +24,7 @@ HTTPGO is a basic HTTP server written in Go language
 ## Requirements
 - Kubernetes 1.10 or later
 - Go 1.9 or later
+- Helm 3
 
 ## Quick start
 Log into K8s master vm (for the sake of simplicity and time we will deploy a Vault server in development mode directly on the K8s master node).
@@ -59,6 +60,7 @@ Development mode should NOT be used in production installations!
 ### Deploy Vault KMS Plugin
 Note: The KMS Plugin Provider for HashiCorp Vault must be running before starting the Kubernetes API server.
 
+In another terminal, install the plugin, which is basically a gRPC server:
 ```
 export GOHOME=$(go env GOPATH)
 mkdir -p $GOHOME/github.com/oracle
@@ -67,7 +69,7 @@ git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
 go install github.com/oracle/kubernetes-vault-kms-plugin/vault/server@latest
 ```
 
-Create ```vault-plugin.yaml``` configuration file as shown in this file [vault-plugin.yaml](vault-plugin.yaml) putting the right token and the right address that you can retrieve from the output above:
+In this example, for the sake of simplicity, the plugin authenticates with the Vault server via the root token provided by the server itself. Create ```vault-plugin.yaml``` configuration file as shown in this file [vault-plugin.yaml](vault-plugin.yaml) putting the right token and the right address that you can retrieve from the output above:
 ```
 keyNames:
   - kube-secret-enc-key
@@ -76,14 +78,14 @@ addr: http://127.0.0.1:8200
 token: <token>
 ```
 
-Then run:
+Then start the server:
 ```
 $GOHOME/bin/server -socketFile=<location of socketfile.sock> -vaultConfig=<location of vault-plugin.yaml>
 ```
 
 ### Enable KMS encryption in Kubernetes
+Now open another terminal to start the KMS enabling procedure.
 The configuration of the api-server should be contained in a yaml file like this:
-
 ```
 apiVersion: apiserver.config.k8s.io/v1
 kind: EncryptionConfiguration
@@ -113,10 +115,10 @@ Change api-server configuration by modifying ```/etc/kubernetes/manifests/kube-a
     type: DirectoryOrCreate
   name: encryption-config
 ```
-The api-server should be restarted automatically by kubelet. In case of problems, debugging can be done looking at log files stored in ```/var/log/pods/kube-system_kube-apiserver*```.
+The api-server should be restarted automatically by ```kubelet```. In case of problems, debugging can be done looking at log files stored in ```/var/log/pods/kube-system_kube-apiserver*```.
 
 ### Test generic secret encryption
-Data is encrypted when written to etcd. After restarting your kube-apiserver, any newly created or updated secret should be encrypted when stored. To verify, you can use the etcdctl command line program to retrieve the contents of your secret:
+Data is encrypted when written to ```etcd```. After restarting your ```kube-apiserver```, any newly created or updated secret should be encrypted when stored. To verify, you can use the ```etcdctl``` command line program to retrieve the contents of your secret:
 ```
 export VAULT_ADDR='http://127.0.0.1:8200'
 vault secrets enable transit
@@ -128,7 +130,7 @@ Finally, the output of the ``` kubectl get secret secret1 -o jsonpath='{.data}'`
 
 Now encryption via KMS is enabled.
 
-### Test certificate encryption and use them in httpgo server
+### Test certificate encryption and use certificates in httpgo server
 To test with certificates, create a personal certificate and put it into a secret:
 ``` 
 openssl genrsa -out ca.key 2048
@@ -213,7 +215,7 @@ And deploy it with ```kubectl apply -f httpgo.yaml```
 
  
 ## Secrets exposure in public repo with Sealed Secrets
-Sealed Secrets are the solution to manage secrets in version control systems: https://github.com/bitnami-labs/sealed-secrets. In fact, it allows you to encrypt your Secret into a SealedSecret, which is safe to store - even to a public repository. The SealedSecret can be decrypted only by the controller running in the target cluster and nobody else (not even the original author) is able to obtain the original Secret from the SealedSecret.
+Sealed Secrets are the solution to manage secrets in version control systems: https://github.com/bitnami-labs/sealed-secrets. In fact, this tool allows you to encrypt your Secret into a SealedSecret, which is safe to store - even to a public repository. The SealedSecret can be decrypted only by the controller running in the target cluster and nobody else (not even the original author) is able to obtain the original Secret from the SealedSecret.
 
 Install ```kubeseal``` command line tool:
 ```
@@ -225,7 +227,7 @@ Install Sealed Secrets controller:
 helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 helm install sealed-secrets-controller sealed-secrets/sealed-secrets -n kube-system
 ```
-Once installed, Sealed Secrets colud be used in our use case to safely store in a public repository the secrets containing httpgo secrets. In fact, if we plan to share to push the secret into a public repo, instead of directly creating the secret via ```kubectl create secret tls my-tls-secret --key ca.key --cert ca.crt```, we need to create and deploy a SealedSecret. More specifically:
+Once installed, Sealed Secrets colud be used in our use case to safely store in a public repository the secrets containing httpgo certificates. In fact, if we plan to push the secret into a public repo, instead of directly creating the secret via ```kubectl create secret tls my-tls-secret --key ca.key --cert ca.crt```, we need to create and deploy a SealedSecret. More specifically, let's create the manifest of a standard tls secret:
 ```
 kubectl create secret tls my-tls-secret -o json >tlssecret.json --key ca.key --cert ca.crt --dry-run=client
 ```
