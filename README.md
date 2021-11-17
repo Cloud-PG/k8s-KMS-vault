@@ -5,7 +5,7 @@ This implementation is based on https://kubernetes.io/docs/tasks/administer-clus
 In particular, you will be able to enable the encryption of secrets via KMS of TLS certificates which will be used by a simple httpgo server.
 So, the key components of this deployments are:
 - HashiCorp Vault deployment (https://www.vaultproject.io/)
-- Vault plugin (https://github.com/ttedeschi/kubernetes-vault-kms-plugin)
+- Vault plugin (https://github.com/Cloud-PG/kubernetes-vault-kms-plugin)
 - httpgo: a basic HTTP server written in Go language (https://github.com/vkuznet/httpgo)
 
 ## Components details
@@ -65,7 +65,7 @@ In another terminal, install the plugin, which is basically a gRPC server:
 export GOHOME=$(go env GOPATH)
 mkdir -p $GOHOME/github.com/oracle
 cd $GOHOME/github.com/oracle
-git clone https://github.com/ttedeschi/kubernetes-vault-kms-plugin.git
+git clone https://github.com/Cloud-PG/kubernetes-vault-kms-plugin.git
 go install github.com/oracle/kubernetes-vault-kms-plugin/vault/server@latest
 ```
 
